@@ -16,4 +16,7 @@ export class UserResponseDto {
 
   @Field()
   updatedAt!: Date;
+
+  @Field()
+  isVerified!: boolean;
 }
