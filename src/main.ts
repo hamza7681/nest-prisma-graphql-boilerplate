@@ -1,8 +1,10 @@
-import { NestFactory } from '@nestjs/core';
-import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
-import { GqlException } from './filters/gql-exception.filter';
+import { NestFactory } from '@nestjs/core';
+
 import cookieParser from 'cookie-parser';
+
+import { AppModule } from './app.module';
+import { GqlException } from './filters/gql-exception.filter';
 
 async function bootstrap() {
   const isProduction = process.env.NODE_ENV === 'production';
