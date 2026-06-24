@@ -2,17 +2,27 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import { GqlException } from './filters/gql-exception.filter';
+import cookieParser from 'cookie-parser';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const isProduction = process.env.NODE_ENV === 'production';
+
+  const app = await NestFactory.create(AppModule, {
+    cors: {
+      origin: isProduction ? process.env.CORS_ORIGIN?.split(',') : '*',
+      credentials: true,
+    },
+  });
 
   app.useGlobalPipes(new ValidationPipe()); // Enable validation for all incoming requests
 
   app.useGlobalFilters(new GqlException()); // Use the custom GraphQL exception filter
+
+  app.use(cookieParser()); // Enable cookie parsing for incoming requests
 
   await app.listen(process.env.PORT!);
 
   const url = await app.getUrl();
   console.log(`🚀 Server running on: ${url}`);
 }
-bootstrap();
+void bootstrap();

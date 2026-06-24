@@ -1,7 +1,7 @@
-import { Field, ID, ObjectType } from '@nestjs/graphql';
+import { Field, ID, Int, ObjectType } from '@nestjs/graphql';
 
 @ObjectType()
-export class UserResponseDto {
+export class UserResponse {
   @Field(() => ID)
   id!: string;
 
@@ -19,4 +19,28 @@ export class UserResponseDto {
 
   @Field()
   isVerified!: boolean;
+}
+
+@ObjectType()
+export class UserResponseDto {
+  @Field(() => Int)
+  statusCode!: number;
+
+  @Field()
+  message!: string;
+
+  @Field(() => UserResponse, { nullable: true })
+  body?: UserResponse;
+}
+
+@ObjectType()
+export class UsersListResponseDto {
+  @Field(() => Int)
+  statusCode!: number;
+
+  @Field()
+  message!: string;
+
+  @Field(() => [UserResponse])
+  body!: UserResponse[];
 }

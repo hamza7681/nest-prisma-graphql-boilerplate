@@ -1,6 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
+
 import * as bcrypt from 'bcrypt';
+import { Response } from 'express';
+
 import { asyncTryCatch } from 'src/utils/tryCatch';
 
 @Injectable()
@@ -68,5 +71,22 @@ export class CommonService {
     }
 
     return response;
+  }
+
+  setCookies({ token, res }: { token: string; res: Response }) {
+    res.cookie('auth-token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    });
+  }
+
+  clearCookies({ res }: { res: Response }) {
+    res.clearCookie('auth-token', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+    });
   }
 }

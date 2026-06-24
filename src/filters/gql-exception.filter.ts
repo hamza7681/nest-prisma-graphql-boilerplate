@@ -5,6 +5,7 @@ import {
   HttpStatus,
 } from '@nestjs/common';
 import { GqlArgumentsHost, GqlExceptionFilter } from '@nestjs/graphql';
+
 import { GraphQLError } from 'graphql';
 
 @Catch()

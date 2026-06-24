@@ -1,16 +1,18 @@
-import { Module } from '@nestjs/common';
-import { GraphQLModule } from '@nestjs/graphql';
-import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
-import { UsersModule } from './modules/users/users.module';
 import { join } from 'path';
-import { PrismaModule } from './modules/prisma/prisma.module';
+
+import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
+import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { CommonModule } from './modules/common/common.module';
 import { APP_INTERCEPTOR } from '@nestjs/core';
-import { GqlResponseInterceptor } from './interceptors/gql-response.interceptor';
-import { AppService } from './app.service';
+import { GraphQLModule } from '@nestjs/graphql';
+
 import { AppController } from './app.controller';
+import { AppService } from './app.service';
+import { GqlResponseInterceptor } from './interceptors/gql-response.interceptor';
+import { CommonModule } from './modules/common/common.module';
 import { EmailModule } from './modules/email/email.module';
+import { PrismaModule } from './modules/prisma/prisma.module';
+import { UsersModule } from './modules/users/users.module';
 
 @Module({
   imports: [
@@ -19,6 +21,10 @@ import { EmailModule } from './modules/email/email.module';
       driver: ApolloDriver,
       autoSchemaFile: join(process.cwd(), 'src/schema.gql'),
       sortSchema: true,
+      context: ({ req, res }): { req: Request; res: Response } => ({
+        req: req as Request,
+        res: res as Response,
+      }),
     }),
     UsersModule,
     PrismaModule,

@@ -7,12 +7,20 @@ A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date
 """
 scalar DateTime
 
+input LoginUserDto {
+  email: String!
+  password: String!
+}
+
 type Mutation {
-  registerUser(data: RegisterUserDto!): RegisterUserResponseDto!
+  loginUser(data: LoginUserDto!): UserResponseDto!
+  logoutUser: UserResponseDto!
+  registerUser(data: RegisterUserDto!): UserResponseDto!
 }
 
 type Query {
-  getAllUsers: [UserResponseDto!]!
+  getAllUsers: UsersListResponseDto!
+  getLoggedInUser: UserResponseDto!
 }
 
 input RegisterUserDto {
@@ -21,16 +29,23 @@ input RegisterUserDto {
   password: String!
 }
 
-type RegisterUserResponseDto {
-  message: String!
-  statusCode: Int!
-}
-
-type UserResponseDto {
+type UserResponse {
   createdAt: DateTime!
   email: String!
   id: ID!
   isVerified: Boolean!
   name: String
   updatedAt: DateTime!
+}
+
+type UserResponseDto {
+  body: UserResponse
+  message: String!
+  statusCode: Int!
+}
+
+type UsersListResponseDto {
+  body: [UserResponse!]!
+  message: String!
+  statusCode: Int!
 }
