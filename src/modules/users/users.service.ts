@@ -12,6 +12,7 @@ import { CurrentUser, FormatUserInput } from 'src/types/user';
 import { PrismaService } from '../prisma/prisma.service';
 import { LoginUserDto } from './dto/login-user.dto';
 import { RegisterAdminDto } from './dto/register-admin.dto';
+import { RegisterUserDto } from './dto/register-user.dto';
 import {
   UserResponse,
   UserResponseDto,
@@ -106,6 +107,88 @@ export class UsersService {
     });
 
     return { message: 'Admin created successfully', statusCode: 201 };
+  }
+
+  async registerUser({
+    data,
+  }: {
+    data: RegisterUserDto;
+  }): Promise<UserResponseDto> {
+    const { name, email, password } = data;
+
+    const existingUser = await this.prisma.user.findUnique({
+      where: { email },
+    });
+
+    if (existingUser) throw new ConflictException('Email already in use');
+
+    const hashedPassword = await this.commonService.hashString({
+      value: password,
+    });
+
+    await this.prisma.$transaction(async (tx) => {
+      const user = await tx.user.create({
+        data: {
+          name,
+          email,
+          password: hashedPassword,
+        },
+      });
+
+      const organization = await tx.organization.create({
+        data: {
+          name: `${name}'s Organization`,
+        },
+      });
+
+      const role = await tx.role.upsert({
+        where: { name: 'USER' },
+        update: {},
+        create: {
+          name: 'USER',
+        },
+      });
+
+      await tx.membership.create({
+        data: {
+          userId: user.id,
+          organizationId: organization.id,
+          roleId: role.id,
+        },
+      });
+    });
+
+    const token = await this.commonService.generateToken({
+      payload: { email },
+      expiresIn: '15m', // 15 minutes
+    });
+
+    await this.emailService.sendWelcomeEmail({ to: email, name, token });
+
+    return { message: 'User registered successfully', statusCode: 201 };
+  }
+
+  async verifyUser({ token }: { token: string }): Promise<UserResponseDto> {
+    const payload = await this.commonService.verifyToken({ token });
+
+    if (!payload || !payload.email)
+      throw new BadRequestException('Invalid or expired token');
+
+    const existingUser = await this.prisma.user.findUnique({
+      where: { email: payload.email as string },
+    });
+
+    if (!existingUser) throw new BadRequestException('User not found');
+
+    if (existingUser.isVerified)
+      throw new BadRequestException('User is already verified');
+
+    await this.prisma.user.update({
+      where: { email: payload.email as string },
+      data: { isVerified: true },
+    });
+
+    return { message: 'User verified successfully', statusCode: 200 };
   }
 
   async loginUser({

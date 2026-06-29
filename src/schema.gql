@@ -11,6 +11,8 @@ type Mutation {
   createAdmin(data: RegisterAdminDto!): UserResponseDto!
   loginUser(data: LoginUserDto!): UserResponseDto!
   logoutUser: UserResponseDto!
+  registerUser(data: RegisterUserDto!): UserResponseDto!
+  verifyUser(data: VerifyUserDto!): UserResponseDto!
 }
 
 type OrganizationResponse {
@@ -36,6 +38,12 @@ input RegisterAdminDto {
   secretKey: String!
 }
 
+input RegisterUserDto {
+  email: String!
+  name: String
+  password: String!
+}
+
 type UserResponse {
   email: String!
   id: ID!
@@ -56,4 +64,8 @@ type UsersListResponseDto {
   body: [UserResponse!]!
   message: String!
   statusCode: Int!
+}
+
+input VerifyUserDto {
+  token: String!
 }

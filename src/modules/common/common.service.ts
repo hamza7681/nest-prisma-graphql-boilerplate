@@ -63,7 +63,10 @@ export class CommonService {
     token: string;
   }): Promise<T> {
     const { response, error } = await asyncTryCatch({
-      fn: async () => this.jwtService.verifyAsync<T>(token),
+      fn: async () =>
+        this.jwtService.verifyAsync<T>(token, {
+          secret: process.env.JWT_SECRET!,
+        }),
     });
 
     if (error) {

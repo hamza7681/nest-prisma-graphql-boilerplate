@@ -9,7 +9,9 @@ import { AuthGuard } from 'src/guards/auth.guard';
 
 import { LoginUserDto } from './dto/login-user.dto';
 import { RegisterAdminDto } from './dto/register-admin.dto';
+import { RegisterUserDto } from './dto/register-user.dto';
 import { UserResponseDto, UsersListResponseDto } from './dto/user-response.dto';
+import { VerifyUserDto } from './dto/verify-user.dto';
 import { User } from './models/users.model';
 import { UsersService } from './users.service';
 
@@ -25,6 +27,22 @@ export class UsersResolver {
     @Args('data') data: RegisterAdminDto,
   ): Promise<UserResponseDto> {
     return await this.usersService.createAdmin({ data });
+  }
+
+  @Mutation(() => UserResponseDto)
+  @ResponseMetadata(201, 'User registered successfully')
+  async registerUser(
+    @Args('data') data: RegisterUserDto,
+  ): Promise<UserResponseDto> {
+    return await this.usersService.registerUser({ data });
+  }
+
+  @Mutation(() => UserResponseDto)
+  @ResponseMetadata(200, 'User verified successfully')
+  async verifyUser(
+    @Args('data') data: VerifyUserDto,
+  ): Promise<UserResponseDto> {
+    return await this.usersService.verifyUser({ token: data.token });
   }
 
   @Mutation(() => UserResponseDto)
