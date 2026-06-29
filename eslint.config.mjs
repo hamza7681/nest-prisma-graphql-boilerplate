@@ -1,16 +1,18 @@
 // @ts-check
 import eslint from '@eslint/js';
+import { defineConfig } from 'eslint/config'; // 👈
 import eslintPluginPrettierRecommended from 'eslint-plugin-prettier/recommended';
 import importPlugin from 'eslint-plugin-import';
+import unusedImports from 'eslint-plugin-unused-imports';
 import globals from 'globals';
 import tseslint from 'typescript-eslint';
 
-export default tseslint.config(
+export default defineConfig([
   {
     ignores: ['eslint.config.mjs'],
   },
   eslint.configs.recommended,
-  ...tseslint.configs.recommendedTypeChecked,
+  ...tseslint.configs.recommendedTypeChecked, 
   eslintPluginPrettierRecommended,
   {
     languageOptions: {
@@ -28,12 +30,24 @@ export default tseslint.config(
   {
     plugins: {
       import: importPlugin,
+      'unused-imports': unusedImports,
     },
     rules: {
       '@typescript-eslint/no-explicit-any': 'off',
       '@typescript-eslint/no-floating-promises': 'warn',
       '@typescript-eslint/no-unsafe-argument': 'warn',
       'prettier/prettier': ['error', { endOfLine: 'auto' }],
+
+      'unused-imports/no-unused-imports': 'error',
+      'unused-imports/no-unused-vars': [
+        'warn',
+        {
+          vars: 'all',
+          varsIgnorePattern: '^_',
+          args: 'after-used',
+          argsIgnorePattern: '^_',
+        },
+      ],
 
       'import/order': [
         'error',
@@ -47,26 +61,15 @@ export default tseslint.config(
             'type',
           ],
           pathGroups: [
-            {
-              pattern: '@nestjs/**',
-              group: 'external',
-              position: 'before',
-            },
-            {
-              pattern: 'src/**',
-              group: 'internal',
-              position: 'after',
-            },
+            { pattern: '@nestjs/**', group: 'external', position: 'before' },
+            { pattern: 'src/**', group: 'internal', position: 'after' },
           ],
           pathGroupsExcludedImportTypes: ['builtin', 'type', 'internal'],
           'newlines-between': 'always',
-          alphabetize: {
-            order: 'asc',
-            caseInsensitive: true,
-          },
+          alphabetize: { order: 'asc', caseInsensitive: true },
         },
       ],
       'import/no-duplicates': 'error',
     },
   },
-);
+]);
