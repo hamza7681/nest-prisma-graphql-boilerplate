@@ -1,6 +1,39 @@
 import { Field, ID, Int, ObjectType } from '@nestjs/graphql';
 
 @ObjectType()
+export class PermissionResponse {
+  @Field(() => ID)
+  id!: string;
+
+  @Field()
+  key!: string;
+
+  @Field(() => String, { nullable: true })
+  description!: string | null;
+}
+
+@ObjectType()
+export class RoleResponse {
+  @Field(() => ID)
+  id!: string;
+
+  @Field()
+  name!: string;
+
+  @Field(() => [PermissionResponse])
+  permissions!: PermissionResponse[];
+}
+
+@ObjectType()
+export class OrganizationResponse {
+  @Field(() => ID)
+  id!: string;
+
+  @Field()
+  name!: string;
+}
+
+@ObjectType()
 export class UserResponse {
   @Field(() => ID)
   id!: string;
@@ -12,13 +45,16 @@ export class UserResponse {
   email!: string;
 
   @Field()
-  createdAt!: Date;
-
-  @Field()
-  updatedAt!: Date;
-
-  @Field()
   isVerified!: boolean;
+
+  @Field(() => OrganizationResponse, { nullable: true })
+  organization?: OrganizationResponse;
+
+  @Field(() => String, { nullable: true })
+  role?: string;
+
+  @Field(() => [String], { nullable: true })
+  permissions?: string[];
 }
 
 @ObjectType()

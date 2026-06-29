@@ -8,21 +8,23 @@ import { ResponseMetadata } from 'src/decorators/response-metadata.decorator';
 import { AuthGuard } from 'src/guards/auth.guard';
 
 import { LoginUserDto } from './dto/login-user.dto';
-import { RegisterUserDto } from './dto/register-user.dto';
+import { RegisterAdminDto } from './dto/register-admin.dto';
 import { UserResponseDto, UsersListResponseDto } from './dto/user-response.dto';
 import { User } from './models/users.model';
 import { UsersService } from './users.service';
+
+import type { CurrentUser } from 'src/types/user';
 
 @Resolver(() => User)
 export class UsersResolver {
   constructor(private readonly usersService: UsersService) {}
 
   @Mutation(() => UserResponseDto)
-  @ResponseMetadata(200, 'User registered successfully')
-  async registerUser(
-    @Args('data') data: RegisterUserDto,
+  @ResponseMetadata(201, 'Admin created successfully')
+  async createAdmin(
+    @Args('data') data: RegisterAdminDto,
   ): Promise<UserResponseDto> {
-    return await this.usersService.registerUser({ data });
+    return await this.usersService.createAdmin({ data });
   }
 
   @Mutation(() => UserResponseDto)
@@ -44,8 +46,10 @@ export class UsersResolver {
   @Query(() => UserResponseDto)
   @UseGuards(AuthGuard)
   @ResponseMetadata(200, 'Logged in user fetched successfully')
-  async getLoggedInUser(@GetUser() userId: string): Promise<UserResponseDto> {
-    return await this.usersService.getLoggedInUser({ userId });
+  async getLoggedInUser(
+    @GetUser() user: CurrentUser,
+  ): Promise<UserResponseDto> {
+    return await this.usersService.getLoggedInUser({ user });
   }
 
   @Mutation(() => UserResponseDto)

@@ -2,15 +2,16 @@ import {
   BadRequestException,
   ConflictException,
   Injectable,
+  UnauthorizedException,
 } from '@nestjs/common';
 
 import { Response } from 'express';
 
-import { User } from 'src/generated/prisma/client';
+import { CurrentUser, FormatUserInput } from 'src/types/user';
 
 import { PrismaService } from '../prisma/prisma.service';
 import { LoginUserDto } from './dto/login-user.dto';
-import { RegisterUserDto } from './dto/register-user.dto';
+import { RegisterAdminDto } from './dto/register-admin.dto';
 import {
   UserResponse,
   UserResponseDto,
@@ -27,49 +28,84 @@ export class UsersService {
     private emailService: EmailService,
   ) {}
 
-  async registerUser({
+  async createAdmin({
     data,
   }: {
-    data: RegisterUserDto;
+    data: RegisterAdminDto;
   }): Promise<UserResponseDto> {
-    const { email, name, password } = data;
+    const { name, email, password, secretKey } = data;
+
+    const isValidAdminSecretKey = secretKey === process.env.ADMIN_CREATION_KEY;
+
+    if (!isValidAdminSecretKey)
+      throw new UnauthorizedException('Invalid secret key');
 
     const existingUser = await this.prisma.user.findUnique({
       where: { email },
     });
 
-    if (existingUser)
-      throw new ConflictException('User with this email already exists');
+    if (existingUser) throw new ConflictException('Email already in use');
 
     const hashedPassword = await this.commonService.hashString({
       value: password,
     });
 
-    const newUser = await this.prisma.user.create({
-      data: {
-        email,
-        name,
-        password: hashedPassword,
-      },
+    await this.prisma.$transaction(async (tx) => {
+      const user = await tx.user.create({
+        data: {
+          name,
+          email,
+          password: hashedPassword,
+          isVerified: true, // Admins are verified by default
+        },
+      });
+
+      const organization = await tx.organization.create({
+        data: {
+          name: `${name}'s Organization`,
+        },
+      });
+
+      const role = await tx.role.upsert({
+        where: { name: 'ADMIN' },
+        update: {},
+        create: {
+          name: 'ADMIN',
+        },
+      });
+
+      await tx.membership.create({
+        data: {
+          userId: user.id,
+          organizationId: organization.id,
+          roleId: role.id,
+        },
+      });
+
+      const permission = await tx.permission.upsert({
+        where: { key: '*' },
+        update: {},
+        create: {
+          key: '*',
+        },
+      });
+
+      await tx.rolePermission.upsert({
+        where: {
+          roleId_permissionId: {
+            roleId: role.id,
+            permissionId: permission.id,
+          },
+        },
+        update: {},
+        create: {
+          roleId: role.id,
+          permissionId: permission.id,
+        },
+      });
     });
 
-    if (!newUser) throw new BadRequestException('Failed to create user');
-
-    const token = await this.commonService.generateToken({
-      payload: { userId: newUser.id },
-      expiresIn: 900, // 15 minutes
-    });
-
-    await this.emailService.sendWelcomeEmail({
-      to: email,
-      name: name as string,
-      token,
-    });
-
-    return {
-      statusCode: 200,
-      message: 'User registered successfully',
-    };
+    return { message: 'Admin created successfully', statusCode: 201 };
   }
 
   async loginUser({
@@ -85,9 +121,24 @@ export class UsersService {
 
     const user = await this.prisma.user.findUnique({
       where: { email },
+      include: {
+        memberships: {
+          take: 1,
+          select: {
+            organization: true,
+          },
+        },
+      },
     });
 
     if (!user) throw new BadRequestException('Wrong Credentials');
+
+    if (!user.isVerified)
+      throw new BadRequestException(
+        'User is not verified. Please verify your email before logging in.',
+      );
+
+    const organizationId = user.memberships[0].organization.id;
 
     const isPasswordValid = await this.commonService.compareHashedString({
       value: password,
@@ -97,7 +148,7 @@ export class UsersService {
     if (!isPasswordValid) throw new BadRequestException('Wrong Credentials');
 
     const token = await this.commonService.generateToken({
-      payload: { userId: user.id },
+      payload: { userId: user.id, organizationId, email: user.email },
       expiresIn: '7d', // 7 days
     });
 
@@ -120,17 +171,54 @@ export class UsersService {
   }
 
   async getLoggedInUser({
-    userId,
+    user,
   }: {
-    userId: string;
+    user: CurrentUser;
   }): Promise<UserResponseDto> {
-    const user = await this.prisma.user.findUnique({
-      where: { id: userId },
+    const existingUser = await this.prisma.membership.findUnique({
+      where: {
+        userId_organizationId: {
+          userId: user.userId,
+          organizationId: user.organizationId,
+        },
+      },
+      select: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            isVerified: true,
+            createdAt: true,
+            updatedAt: true,
+          },
+        },
+        organization: {
+          select: { id: true, name: true },
+        },
+        role: {
+          select: {
+            id: true,
+            name: true,
+            permissions: {
+              select: {
+                permission: {
+                  select: { id: true, key: true, description: true },
+                },
+              },
+            },
+          },
+        },
+      },
     });
 
-    if (!user) throw new BadRequestException('User not found');
+    if (!existingUser) throw new BadRequestException('User not found');
 
-    const formattedUser = this.formatUser({ user });
+    const formattedUser = this.formatUser({
+      user: existingUser.user,
+      organization: existingUser.organization,
+      role: existingUser.role,
+    });
 
     return {
       statusCode: 200,
@@ -150,14 +238,17 @@ export class UsersService {
     };
   }
 
-  formatUser({ user }: { user: User }): UserResponse {
+  formatUser({ user, organization, role }: FormatUserInput): UserResponse {
     return {
       id: user.id,
       name: user.name,
       email: user.email,
       isVerified: user.isVerified,
-      createdAt: user.createdAt,
-      updatedAt: user.updatedAt,
+      ...(organization && { organization }),
+      ...(role && {
+        role: role.name,
+        permissions: role.permissions.map((p) => p.permission.key),
+      }),
     };
   }
 }

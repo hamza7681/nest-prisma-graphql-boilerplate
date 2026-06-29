@@ -4,6 +4,8 @@ import { PassportStrategy } from '@nestjs/passport';
 import { Request } from 'express';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 
+import { CurrentUser } from 'src/types/user';
+
 @Injectable()
 export class AuthStrategy extends PassportStrategy(Strategy) {
   constructor() {
@@ -17,8 +19,12 @@ export class AuthStrategy extends PassportStrategy(Strategy) {
     });
   }
 
-  validate(payload: { userId: string }) {
+  validate(payload: CurrentUser) {
     // whatever is returned here will be available in the request object as req.user
-    return { userId: payload.userId };
+    return {
+      userId: payload.userId,
+      email: payload.email,
+      organizationId: payload.organizationId,
+    };
   }
 }

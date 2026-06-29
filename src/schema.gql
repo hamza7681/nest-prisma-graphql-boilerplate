@@ -2,20 +2,26 @@
 # THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
 # ------------------------------------------------------
 
-"""
-A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date-time format.
-"""
-scalar DateTime
-
 input LoginUserDto {
   email: String!
   password: String!
 }
 
 type Mutation {
+  createAdmin(data: RegisterAdminDto!): UserResponseDto!
   loginUser(data: LoginUserDto!): UserResponseDto!
   logoutUser: UserResponseDto!
-  registerUser(data: RegisterUserDto!): UserResponseDto!
+}
+
+type OrganizationResponse {
+  id: ID!
+  name: String!
+}
+
+type PermissionResponse {
+  description: String
+  id: ID!
+  key: String!
 }
 
 type Query {
@@ -23,19 +29,21 @@ type Query {
   getLoggedInUser: UserResponseDto!
 }
 
-input RegisterUserDto {
+input RegisterAdminDto {
   email: String!
-  name: String
+  name: String!
   password: String!
+  secretKey: String!
 }
 
 type UserResponse {
-  createdAt: DateTime!
   email: String!
   id: ID!
   isVerified: Boolean!
   name: String
-  updatedAt: DateTime!
+  organization: OrganizationResponse
+  permissions: [String!]
+  role: String
 }
 
 type UserResponseDto {
