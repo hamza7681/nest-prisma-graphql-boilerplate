@@ -13,6 +13,11 @@ datasource db {
   provider = "postgresql"
 }
 
+enum ROLES {
+  ADMIN
+  USER
+}
+
 model User {
   id           String   @id @default(cuid())
   email        String   @unique
@@ -63,7 +68,7 @@ model Membership {
 model Role {
   id          String @id @default(cuid())
 
-  name        String @unique
+  name        ROLES @unique
 
   memberships Membership[]
   permissions RolePermission[]

@@ -1,3 +1,4 @@
+import { ROLES } from 'src/constants/user';
 import {
   Organization,
   Permission,
@@ -29,3 +30,5 @@ export type FormatUserInput = {
   organization?: OrganizationData;
   role?: RoleData;
 };
+
+export type RoleType = (typeof ROLES)[keyof typeof ROLES];
