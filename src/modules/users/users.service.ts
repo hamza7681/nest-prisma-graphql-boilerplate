@@ -243,13 +243,57 @@ export class UsersService {
     };
   }
 
-  async getAllUsers(): Promise<UsersListResponseDto> {
-    const users = await this.prisma.user.findMany();
+  async getAllUsers({
+    user,
+  }: {
+    user: CurrentUser;
+  }): Promise<UsersListResponseDto> {
+    const users = await this.prisma.membership.findMany({
+      where: {
+        userId: {
+          not: user.userId,
+        },
+      },
+      select: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            isVerified: true,
+            createdAt: true,
+            updatedAt: true,
+          },
+        },
+        organization: {
+          select: { id: true, name: true },
+        },
+        role: {
+          select: {
+            id: true,
+            name: true,
+            permissions: {
+              select: {
+                permission: {
+                  select: { id: true, key: true, description: true },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
 
     return {
       statusCode: 200,
       message: 'Users fetched successfully',
-      body: users.map((user) => this.formatUser({ user })),
+      body: users.map((user) =>
+        this.formatUser({
+          user: user.user,
+          organization: user.organization,
+          role: user.role,
+        }),
+      ),
     };
   }
 

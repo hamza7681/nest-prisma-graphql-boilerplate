@@ -2,6 +2,11 @@
 # THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
 # ------------------------------------------------------
 
+input CreatePermissionDto {
+  description: String
+  key: String!
+}
+
 input LoginUserDto {
   email: String!
   password: String!
@@ -9,9 +14,11 @@ input LoginUserDto {
 
 type Mutation {
   createAdmin(data: RegisterAdminDto!): UserResponseDto!
+  createPermission(data: CreatePermissionDto!): PermissionResponseDto!
   loginUser(data: LoginUserDto!): UserResponseDto!
   logoutUser: UserResponseDto!
   registerUser(data: RegisterUserDto!): UserResponseDto!
+  updatePermission(data: CreatePermissionDto!, id: String!): PermissionResponseDto!
   verifyUser(data: VerifyUserDto!): UserResponseDto!
 }
 
@@ -26,7 +33,20 @@ type PermissionResponse {
   key: String!
 }
 
+type PermissionResponseDto {
+  body: PermissionResponse
+  message: String!
+  statusCode: Int!
+}
+
+type PermissionsListResponseDto {
+  body: [PermissionResponse!]!
+  message: String!
+  statusCode: Int!
+}
+
 type Query {
+  getAllPermissions: PermissionsListResponseDto!
   getAllUsers: UsersListResponseDto!
   getLoggedInUser: UserResponseDto!
 }

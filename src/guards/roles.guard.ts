@@ -1,16 +1,16 @@
 import {
-  Injectable,
   CanActivate,
   ExecutionContext,
   ForbiddenException,
+  Injectable,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { GqlExecutionContext } from '@nestjs/graphql';
 
-import { PERMISSIONS_KEY } from 'src/decorators/permissions.decorator';
-import { ROLES_KEY } from 'src/decorators/roles.decorator';
+import { PERMISSION_KEY } from 'src/decorators/require-permission.decorator';
 import { PrismaService } from 'src/modules/prisma/prisma.service';
-import { CurrentUser, RoleType } from 'src/types/user';
+import { CurrentUser } from 'src/types/user';
 
 @Injectable()
 export class RolesGuard implements CanActivate {
@@ -20,24 +20,22 @@ export class RolesGuard implements CanActivate {
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const requiredRoles = this.reflector.getAllAndOverride<RoleType[]>(
-      ROLES_KEY,
+    //  Read required permission from decorator
+    const requiredPermission = this.reflector.getAllAndOverride<string>(
+      PERMISSION_KEY,
       [context.getHandler(), context.getClass()],
     );
 
-    const requiredPermissions = this.reflector.getAllAndOverride<string[]>(
-      PERMISSIONS_KEY,
-      [context.getHandler(), context.getClass()],
-    );
+    //  No decorator = public resolver, skip guard
+    if (!requiredPermission) return true;
 
-    if (!requiredRoles && !requiredPermissions) return true;
-
+    //  Get logged in user from GQL context
     const ctx = GqlExecutionContext.create(context);
+    const user = ctx.getContext<{ req: { user: CurrentUser } }>().req.user;
 
-    const user = ctx.getContext<{ user: CurrentUser }>().user;
+    if (!user) throw new UnauthorizedException('Not authenticated');
 
-    if (!user) return false;
-
+    // 4. Fetch role + permissions from DB
     const membership = await this.prisma.membership.findUnique({
       where: {
         userId_organizationId: {
@@ -59,33 +57,17 @@ export class RolesGuard implements CanActivate {
       },
     });
 
-    if (!membership) return false;
+    if (!membership) throw new ForbiddenException('No membership found');
 
-    const userRole = membership.role.name;
-
-    const userPermissions = membership.role.permissions.map(
-      (permission) => permission.permission.key,
+    //  Check if role has required permission
+    const hasPermission = membership.role.permissions.some(
+      (rp) => rp.permission.key === requiredPermission,
     );
 
-    if (requiredRoles?.length) {
-      const hasRole = requiredRoles.includes(userRole);
-
-      if (!hasRole)
-        throw new ForbiddenException(
-          'You do not have the required role to access this resource',
-        );
-    }
-
-    if (requiredPermissions?.length) {
-      const hasPermission = requiredPermissions.every((permission) =>
-        userPermissions.includes(permission),
+    if (!hasPermission)
+      throw new ForbiddenException(
+        "You don't have permissions to perform this action.",
       );
-
-      if (!hasPermission)
-        throw new ForbiddenException(
-          'You do not have the required permissions to access this resource',
-        );
-    }
 
     return true;
   }

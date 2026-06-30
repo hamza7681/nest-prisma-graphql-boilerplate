@@ -1,4 +1,4 @@
-import { ROLES } from 'src/constants/user';
+import { PERMISSION_KEYS, ROLES } from 'src/constants/user';
 import {
   Organization,
   Permission,
@@ -32,3 +32,5 @@ export type FormatUserInput = {
 };
 
 export type RoleType = (typeof ROLES)[keyof typeof ROLES];
+
+export type PermissionKey = (typeof PERMISSION_KEYS)[number];

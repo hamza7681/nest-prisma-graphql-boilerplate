@@ -9,7 +9,7 @@ export class PermissionResponse {
   key!: string;
 
   @Field(() => String, { nullable: true })
-  description!: string | null;
+  description?: string | null;
 }
 
 @ObjectType()

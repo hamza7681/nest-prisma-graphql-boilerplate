@@ -3,10 +3,10 @@ import { Args, Context, Mutation, Query, Resolver } from '@nestjs/graphql';
 
 import { Response } from 'express';
 
-import { ROLES } from 'src/constants/user';
+import { PERMISSIONS } from 'src/constants/user';
 import { GetUser } from 'src/decorators/current-user.decorator';
+import { RequirePermission } from 'src/decorators/require-permission.decorator';
 import { ResponseMetadata } from 'src/decorators/response-metadata.decorator';
-import { Roles } from 'src/decorators/roles.decorator';
 import { AuthGuard } from 'src/guards/auth.guard';
 
 import { LoginUserDto } from './dto/login-user.dto';
@@ -58,10 +58,12 @@ export class UsersResolver {
 
   @Query(() => UsersListResponseDto)
   @UseGuards(AuthGuard)
-  @Roles(ROLES.ADMIN)
+  @RequirePermission(PERMISSIONS.admin.read)
   @ResponseMetadata(200, 'Users fetched successfully')
-  async getAllUsers(): Promise<UsersListResponseDto> {
-    return await this.usersService.getAllUsers();
+  async getAllUsers(
+    @GetUser() user: CurrentUser,
+  ): Promise<UsersListResponseDto> {
+    return await this.usersService.getAllUsers({ user });
   }
 
   @Query(() => UserResponseDto)
