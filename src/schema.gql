@@ -2,9 +2,18 @@
 # THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
 # ------------------------------------------------------
 
+input AssignPermissionsDto {
+  permissionIds: [String!]!
+  roleId: String!
+}
+
 input CreatePermissionDto {
   description: String
   key: String!
+}
+
+input CreateRoleDto {
+  name: String!
 }
 
 input LoginUserDto {
@@ -13,12 +22,18 @@ input LoginUserDto {
 }
 
 type Mutation {
+  addOrUpdateMultiplePermissions(data: [CreatePermissionDto!]!): PermissionResponseDto!
   createAdmin(data: RegisterAdminDto!): UserResponseDto!
   createPermission(data: CreatePermissionDto!): PermissionResponseDto!
+  createRole(data: CreateRoleDto!): RoleResponseDto!
+  deletePermission(id: String!): PermissionResponseDto!
+  deleteRole(id: String!): RoleResponseDto!
   loginUser(data: LoginUserDto!): UserResponseDto!
   logoutUser: UserResponseDto!
   registerUser(data: RegisterUserDto!): UserResponseDto!
+  setRolePermissions(data: AssignPermissionsDto!): RoleResponseDto!
   updatePermission(data: CreatePermissionDto!, id: String!): PermissionResponseDto!
+  updateRoleName(data: CreateRoleDto!, id: String!): RoleResponseDto!
   verifyUser(data: VerifyUserDto!): UserResponseDto!
 }
 
@@ -47,8 +62,12 @@ type PermissionsListResponseDto {
 
 type Query {
   getAllPermissions: PermissionsListResponseDto!
+  getAllRoles: RolesListResponseDto!
   getAllUsers: UsersListResponseDto!
   getLoggedInUser: UserResponseDto!
+  getPermissionById(id: String!): PermissionResponseDto!
+  getRoleById(id: String!): RoleResponseDto!
+  getRoleByName(name: String!): RoleResponseDto!
 }
 
 input RegisterAdminDto {
@@ -62,6 +81,24 @@ input RegisterUserDto {
   email: String!
   name: String
   password: String!
+}
+
+type RoleResponse {
+  id: ID!
+  name: String!
+  permissions: [PermissionResponse!]!
+}
+
+type RoleResponseDto {
+  body: RoleResponse
+  message: String!
+  statusCode: Int!
+}
+
+type RolesListResponseDto {
+  body: [RoleResponse!]!
+  message: String!
+  statusCode: Int!
 }
 
 type UserResponse {

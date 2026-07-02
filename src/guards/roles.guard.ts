@@ -10,7 +10,7 @@ import { GqlExecutionContext } from '@nestjs/graphql';
 
 import { PERMISSION_KEY } from 'src/decorators/require-permission.decorator';
 import { PrismaService } from 'src/modules/prisma/prisma.service';
-import { CurrentUser } from 'src/types/user';
+import { CurrentUser, PermissionKey } from 'src/types/user';
 
 @Injectable()
 export class RolesGuard implements CanActivate {
@@ -20,14 +20,13 @@ export class RolesGuard implements CanActivate {
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    //  Read required permission from decorator
-    const requiredPermission = this.reflector.getAllAndOverride<string>(
-      PERMISSION_KEY,
-      [context.getHandler(), context.getClass()],
-    );
+    //  Read required permissions from decorator
+    const requiredPermissions = this.reflector.getAllAndOverride<
+      PermissionKey[]
+    >(PERMISSION_KEY, [context.getHandler(), context.getClass()]);
 
     //  No decorator = public resolver, skip guard
-    if (!requiredPermission) return true;
+    if (!requiredPermissions?.length) return true;
 
     //  Get logged in user from GQL context
     const ctx = GqlExecutionContext.create(context);
@@ -59,9 +58,9 @@ export class RolesGuard implements CanActivate {
 
     if (!membership) throw new ForbiddenException('No membership found');
 
-    //  Check if role has required permission
-    const hasPermission = membership.role.permissions.some(
-      (rp) => rp.permission.key === requiredPermission,
+    //  Check if role has any required permission
+    const hasPermission = membership.role.permissions.some((rp) =>
+      requiredPermissions.includes(rp.permission.key),
     );
 
     if (!hasPermission)

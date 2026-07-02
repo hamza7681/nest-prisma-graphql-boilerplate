@@ -58,7 +58,7 @@ export class UsersResolver {
 
   @Query(() => UsersListResponseDto)
   @UseGuards(AuthGuard)
-  @RequirePermission(PERMISSIONS.admin.read)
+  @RequirePermission([PERMISSIONS.admin.read])
   @ResponseMetadata(200, 'Users fetched successfully')
   async getAllUsers(
     @GetUser() user: CurrentUser,

@@ -1,4 +1,8 @@
-import { Injectable } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 
 import { PrismaService } from '../prisma/prisma.service';
 import { CreatePermissionDto } from './dto/create-permission.dto';
@@ -36,6 +40,27 @@ export class PermissionsService {
     return {
       message: 'Permission created successfully',
       statusCode: 201,
+    };
+  }
+
+  async addOrUpdateMultiplePermissions({
+    data,
+  }: {
+    data: CreatePermissionDto[];
+  }): Promise<PermissionResponseDto> {
+    await Promise.all(
+      data.map(({ key, description }) =>
+        this.prisma.permission.upsert({
+          where: { key },
+          create: { key, description },
+          update: { description },
+        }),
+      ),
+    );
+
+    return {
+      message: 'Permissions updated successfully',
+      statusCode: 200,
     };
   }
 
@@ -80,6 +105,55 @@ export class PermissionsService {
 
     return {
       message: 'Permission updated successfully',
+      statusCode: 200,
+    };
+  }
+
+  async getPermissionById({
+    id,
+  }: {
+    id: string;
+  }): Promise<PermissionResponseDto> {
+    const permission = await this.prisma.permission.findUnique({
+      where: { id },
+    });
+
+    if (!permission) throw new NotFoundException('Permission not found');
+
+    return {
+      message: 'Permission fetched successfully',
+      statusCode: 200,
+      body: {
+        id: permission.id,
+        key: permission.key,
+        description: permission.description ?? null,
+      },
+    };
+  }
+
+  async deletePermission({
+    id,
+  }: {
+    id: string;
+  }): Promise<PermissionResponseDto> {
+    const permission = await this.prisma.permission.findUnique({
+      where: { id },
+      include: { roles: true },
+    });
+
+    if (!permission) throw new NotFoundException('Permission not found');
+
+    if (permission.roles.length > 0)
+      throw new ConflictException(
+        'Permission is assigned to one or more roles and cannot be deleted',
+      );
+
+    await this.prisma.permission.delete({
+      where: { id },
+    });
+
+    return {
+      message: 'Permission deleted successfully',
       statusCode: 200,
     };
   }

@@ -3,6 +3,8 @@ export const ROLES = {
   USER: 'USER',
 } as const;
 
+export const ROLE_KEYS = Object.values(ROLES) as readonly string[];
+
 export const PERMISSIONS = {
   admin: {
     read: '*',
