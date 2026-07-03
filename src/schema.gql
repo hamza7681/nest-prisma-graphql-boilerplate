@@ -16,6 +16,10 @@ input CreateRoleDto {
   name: String!
 }
 
+input ForgotPasswordDto {
+  email: String!
+}
+
 input LoginUserDto {
   email: String!
   password: String!
@@ -28,9 +32,11 @@ type Mutation {
   createRole(data: CreateRoleDto!): RoleResponseDto!
   deletePermission(id: String!): PermissionResponseDto!
   deleteRole(id: String!): RoleResponseDto!
+  forgotPassword(data: ForgotPasswordDto!): UserResponseDto!
   loginUser(data: LoginUserDto!): UserResponseDto!
   logoutUser: UserResponseDto!
   registerUser(data: RegisterUserDto!): UserResponseDto!
+  resetPassword(data: ResetPasswordDto!): UserResponseDto!
   setRolePermissions(data: AssignPermissionsDto!): RoleResponseDto!
   updatePermission(data: CreatePermissionDto!, id: String!): PermissionResponseDto!
   updateRoleName(data: CreateRoleDto!, id: String!): RoleResponseDto!
@@ -81,6 +87,11 @@ input RegisterUserDto {
   email: String!
   name: String
   password: String!
+}
+
+input ResetPasswordDto {
+  password: String!
+  token: String!
 }
 
 type RoleResponse {

@@ -27,4 +27,26 @@ export class EmailService {
       },
     });
   }
+
+  async sendResetPasswordEmail({
+    to,
+    name,
+    token,
+  }: {
+    to: string;
+    name: string;
+    token: string;
+  }): Promise<void> {
+    const resetPasswordUrl = `${process.env.FRONTEND_URL}/reset-password/${token}`;
+
+    await this.mailerService.sendMail({
+      to,
+      subject: 'Reset your password',
+      template: 'resetPassword',
+      context: {
+        name,
+        resetPasswordUrl,
+      },
+    });
+  }
 }

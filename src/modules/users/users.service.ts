@@ -20,6 +20,8 @@ import {
 } from './dto/user-response.dto';
 import { CommonService } from '../common/common.service';
 import { EmailService } from '../email/email.service';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 
 @Injectable()
 export class UsersService {
@@ -363,6 +365,72 @@ export class UsersService {
       statusCode: 200,
       message: 'User logged out successfully',
     };
+  }
+
+  async forgotPassword({
+    data,
+  }: {
+    data: ForgotPasswordDto;
+  }): Promise<UserResponseDto> {
+    const { email } = data;
+
+    const existingUser = await this.prisma.user.findUnique({
+      where: { email },
+    });
+
+    if (!existingUser)
+      return {
+        message:
+          'You will receive an email to reset your password if your account exists',
+        statusCode: 200,
+      };
+
+    const token = await this.commonService.generateToken({
+      payload: { email },
+      expiresIn: '15m', // 15 minutes
+    });
+
+    await this.emailService.sendResetPasswordEmail({
+      to: email,
+      name: existingUser.name,
+      token,
+    });
+
+    return {
+      message:
+        'You will receive an email to reset your password if your account exists',
+      statusCode: 200,
+    };
+  }
+
+  async resetPassword({
+    data,
+  }: {
+    data: ResetPasswordDto;
+  }): Promise<UserResponseDto> {
+    const { token, password } = data;
+
+    const payload = await this.commonService.verifyToken({ token });
+
+    if (!payload || !payload.email)
+      throw new BadRequestException('Invalid or expired token');
+
+    const existingUser = await this.prisma.user.findUnique({
+      where: { email: payload.email as string },
+    });
+
+    if (!existingUser) throw new BadRequestException('User not found');
+
+    const hashedPassword = await this.commonService.hashString({
+      value: password,
+    });
+
+    await this.prisma.user.update({
+      where: { email: payload.email as string },
+      data: { password: hashedPassword },
+    });
+
+    return { message: 'Password reset successfully', statusCode: 200 };
   }
 
   formatUser({ user, organization, role }: FormatUserInput): UserResponse {

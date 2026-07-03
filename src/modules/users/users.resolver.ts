@@ -9,9 +9,11 @@ import { RequirePermission } from 'src/decorators/require-permission.decorator';
 import { ResponseMetadata } from 'src/decorators/response-metadata.decorator';
 import { AuthGuard } from 'src/guards/auth.guard';
 
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { LoginUserDto } from './dto/login-user.dto';
 import { RegisterAdminDto } from './dto/register-admin.dto';
 import { RegisterUserDto } from './dto/register-user.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 import { UserResponseDto, UsersListResponseDto } from './dto/user-response.dto';
 import { VerifyUserDto } from './dto/verify-user.dto';
 import { User } from './models/users.model';
@@ -80,5 +82,21 @@ export class UsersResolver {
   @ResponseMetadata(200, 'User logged out successfully')
   logoutUser(@Context() ctx: { res: Response }): UserResponseDto {
     return this.usersService.logoutUser({ ctx });
+  }
+
+  @Mutation(() => UserResponseDto)
+  @ResponseMetadata(200, 'Password reset email sent successfully')
+  async forgotPassword(
+    @Args('data') data: ForgotPasswordDto,
+  ): Promise<UserResponseDto> {
+    return await this.usersService.forgotPassword({ data });
+  }
+
+  @Mutation(() => UserResponseDto)
+  @ResponseMetadata(200, 'Password reset successfully')
+  async resetPassword(
+    @Args('data') data: ResetPasswordDto,
+  ): Promise<UserResponseDto> {
+    return await this.usersService.resetPassword({ data });
   }
 }
