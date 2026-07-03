@@ -1,0 +1,10 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "type": "command",
+        "command": "printf '%s' '{\"systemMessage\":\"Workspace context: NestJS 11 GraphQL API with Prisma, PostgreSQL, JWT auth, RBAC roles and permissions, guards, and mail templates. Preserve the resolver/service split, keep GraphQL context wiring in app.module.ts and main.ts, use DTOs with class-validator, and prefer npm run format or npm run lint after edits when practical.\"}'"
+      }
+    ]
+  }
+}
